@@ -1,0 +1,39 @@
+-- This query selects all Apps from both stores with a rating of at least 4 that are not free.
+WITH apple AS (
+	SELECT * 
+	FROM app_store_apps
+	WHERE rating >= 4
+	AND price > 0
+	),
+google AS (
+	SELECT * 
+	FROM app_store_apps
+	WHERE rating >= 4
+	AND price != '0'
+	)
+SELECT name, price, rating, 'Apple' from apple
+UNION ALL
+SELECT name, price, rating, 'Google' from google
+ORDER BY name;
+
+
+
+SELECT -- This subquery helps to put most columns together from App / Play stores. 
+	name,
+	primary_genre AS "category",
+	rating,
+	size_bytes AS "size",
+	content_rating,
+	'App Store' AS "store"
+FROM app_store_apps
+UNION ALL
+SELECT 
+	name,
+	category,
+	rating,
+	size,
+	content_rating,
+	'Play Store' AS "store"
+FROM play_store_apps
+ORDER BY name;
+

@@ -1,0 +1,10 @@
+ SELECT *
+ FROM app_store_apps;
+ 
+
+SELECT *
+FROM app_store_apps
+WHERE name IN (SELECT name
+			  FROM play_store_apps)
+AND rating = 5
+AND price = 0;
