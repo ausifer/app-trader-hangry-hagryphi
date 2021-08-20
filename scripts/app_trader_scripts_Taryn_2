@@ -1,4 +1,5 @@
--- This query selects all Apps from both stores with a rating of at least 4 that are not free.
+-- This is a query to find all apps in both the App Store and Play Store with a rating >= 4 and price > 0, their category,
+-- expected lifespan in years, earnings, and total cost
 WITH apple AS (
 	SELECT * 
 	FROM app_store_apps
@@ -7,33 +8,101 @@ WITH apple AS (
 	),
 google AS (
 	SELECT * 
-	FROM app_store_apps
+	FROM play_store_apps
 	WHERE rating >= 4
 	AND price != '0'
 	)
-SELECT name, price, rating, 'Apple' from apple
-UNION ALL
-SELECT name, price, rating, 'Google' from google
-ORDER BY name;
-
-
-
-SELECT -- This subquery helps to put most columns together from App / Play stores. 
-	name,
+SELECT name,
+	rating,
+	'Apple' AS store,
+	price AS cost,
 	primary_genre AS "category",
-	rating,
-	size_bytes AS "size",
-	content_rating,
-	'App Store' AS "store"
-FROM app_store_apps
+	ROUND(rating / .5,1) + 1 AS expected_lifespan_in_years,
+	(((rating * 2) + 1) * 12 * 5000) AS earnings,
+	CASE WHEN price <= 1 THEN 10000 + (((rating * 2) + 1) * 12 * 1000)
+		WHEN price > 1 THEN price * 10000 + (((rating * 2) + 1) * 12 * 1000)
+		END AS total_cost
+FROM apple
+WHERE name IN (SELECT name FROM google)
 UNION ALL
-SELECT 
-	name,
-	category,
+SELECT name,
 	rating,
-	size,
-	content_rating,
-	'Play Store' AS "store"
-FROM play_store_apps
-ORDER BY name;
+	'Google' AS store,
+	NULLIF(regexp_replace(price, '[^0-9.]*','','g'), '')::numeric AS cost,
+	category,
+	ROUND(rating / .5,1) + 1 AS expected_lifespan_in_years,
+	(((rating * 2) + 1) * 12 * 5000) AS total_earnings,
+	CASE WHEN NULLIF(regexp_replace(price, '[^0-9.]*','','g'), '')::numeric <= 1 THEN 10000 + (((rating * 2) + 1) * 12 * 1000)
+		WHEN NULLIF(regexp_replace(price, '[^0-9.]*','','g'), '')::numeric > 1 THEN NULLIF(regexp_replace(price, '[^0-9.]*','','g'), '')::numeric * 10000 + (((rating * 2) + 1) * 12 * 1000)
+		END AS total_cost
+FROM google
+WHERE name IN (SELECT name FROM apple)
+ORDER BY name, rating DESC
+;
 
+
+
+	
+WITH apple AS (
+	SELECT * 
+	FROM app_store_apps
+	WHERE rating >= 4
+	AND price > 0
+	),
+google AS (
+	SELECT * 
+	FROM play_store_apps
+	WHERE rating >= 4
+	AND price != '0'
+	)
+SELECT *
+FROM
+(SELECT
+	name,
+	rating,
+	store,
+	cost,
+	ROUND(rating / .5,1) + 1 AS expected_lifespan_in_years,
+	((rating * 2) + 1) * 12 * 5000 AS lifetime_earnings,
+	CASE WHEN cost <= 1 THEN 10000
+		WHEN cost > 1 THEN cost * 10000
+		END AS purchase_cost,
+	CASE WHEN cost <= 1 THEN 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
+		WHEN cost > 1 THEN cost * 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
+		END AS total_marketing_cost,
+	(CASE WHEN cost <= 1 THEN 10000
+		WHEN cost > 1 THEN cost * 10000
+		END) +
+ 	(CASE WHEN cost <= 1 THEN 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
+		WHEN cost > 1 THEN cost * 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
+		END) AS total_cost,
+ 	((rating * 2 + 1 * 12 * 5000)*(ROUND(rating / .5,3) + 1)) -
+ 	((CASE WHEN cost <= 1 THEN 10000
+		WHEN cost > 1 THEN cost * 10000
+		END) +
+ 	(CASE WHEN cost <= 1 THEN 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
+		WHEN cost > 1 THEN cost * 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
+		END)) AS net_profit
+FROM
+(
+	SELECT name,
+		rating,
+		'Apple' AS store,
+		price AS cost
+		FROM apple
+		WHERE name IN (SELECT name FROM google)
+		UNION ALL
+	SELECT 	name,
+		rating,
+		'Google' AS store,
+		NULLIF(regexp_replace(price, '[^0-9.]*','','g'), '')::numeric AS cost
+		FROM google
+		WHERE name IN (SELECT name FROM play_store_apps)
+		ORDER BY name
+) AS combo
+ORDER BY expected_lifespan_in_years DESC) as test
+;
+
+
+
+		
