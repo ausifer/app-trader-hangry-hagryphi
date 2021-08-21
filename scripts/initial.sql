@@ -60,15 +60,12 @@ FROM
 	rating,
 	store,
 	cost,
- 	
-	ROUND(rating / .5,3) + 1 AS expected_lifespan_in_years,
+ 	1000* ((rating*2) + 1) * 12 as total_marketing_cost,
+	round(rating / .5,3) + 1 AS expected_lifespan_in_years,
 	rating * 2 + 1 * 12 * 5000 AS lifetime_earnings,
 	CASE WHEN cost <= 1 THEN 10000
 		WHEN cost > 1 THEN cost * 10000
 		END AS purchase_cost,
-	CASE WHEN cost <= 1 THEN 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
-		WHEN cost > 1 THEN cost * 10000 + (ROUND(rating / .5,1) + 1 * 12 * 1000)
-		END AS total_marketing_cost,
 	(CASE WHEN cost <= 1 THEN 10000
 		WHEN cost > 1 THEN cost * 10000
 		END) +
@@ -84,19 +81,22 @@ FROM
 		END)) AS net_profit
 FROM
 (
-	SELECT name,
+	SELECT distinct name,
 		rating,
 		'Apple' AS store,
 		price AS cost
 		FROM apple
 		WHERE name IN (SELECT name FROM google)
 		UNION ALL
-	SELECT 	name,
+	SELECT 	distinct name,
 		rating,
 		'Google' AS store,
 		NULLIF(regexp_replace(price, '[^0-9.]*','','g'), '')::numeric AS cost
 		FROM google
-		WHERE name IN (SELECT name FROM play_store_apps)
+		WHERE name IN (SELECT name FROM apple)
 		ORDER BY name
 ) AS combo
-ORDER BY net_profit DESC) as test;
+ 
+ORDER BY name, net_profit DESC) as test
+;
+
