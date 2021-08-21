@@ -5,24 +5,23 @@ WITH apple AS (
 	SELECT * 
 	FROM app_store_apps
 	WHERE rating >= 4
-	AND price > 0),
+	),
 -- CTE to select play store table
 google AS (
 	SELECT * 
 	FROM play_store_apps
 	WHERE rating >= 4
-	AND price != '0'
 	)
 -- main outer query to determine columns and total net profit
 SELECT DISTINCT TRIM(name) AS name,
 		rating,
 		store,
 		cost,
-		INITCAP(
+		REPLACE(REPLACE(INITCAP(
 			CASE WHEN category ILIKE '%Game%' THEN 'Games'
 				WHEN category ILIKE '%Health%' THEN 'Health & Fitness'
 				WHEN category ILIKE '%Food%' THEN 'Food & Drink'
-				ELSE category END) AS category,
+				ELSE category END), '_', ' '), 'AND', '&') AS category,
 		expected_lifespan_in_years,
 		lifetime_earnings,
 		lifetime_cost,
@@ -69,5 +68,3 @@ WHERE row_num = 1
 -- ORDER BY total net profit to show the most profitable first, then by name to group the names together
 ORDER BY total_net_profit DESC, TRIM(name)
 ;
-
-
