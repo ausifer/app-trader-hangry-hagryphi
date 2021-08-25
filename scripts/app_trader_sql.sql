@@ -71,7 +71,7 @@ SELECT
 	CASE WHEN COUNT(store) >= 3 THEN 2
 	WHEN COUNT(store) < 3 THEN COUNT(store) 
 	END										AS store_count,
-	AVG(rating) AS avg_rating,
+	AVG(rating) 							AS avg_rating,
 	AVG(expected_lifespan_in_years) 		AS avg_lifespan,
     SUM(lifetime_earnings) 					AS combined_lifetime_earnings,
     SUM(lifetime_cost) 						AS combined_lifetime_cost,
